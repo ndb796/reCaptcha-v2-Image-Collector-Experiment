@@ -12,9 +12,9 @@ function rdn (min, max) {
 }
 
 // Delay function for stable data collecting
-function delay( timeout ) {
-  return new Promise(( resolve ) => {
-    setTimeout( resolve, timeout );
+function delay(timeout) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, timeout);
   });
 }
 
@@ -26,16 +26,28 @@ var download = function(uri, filename, callback){
 };
 
 // Make folder that contains images if the folder doesn't exist.
-!fs.existsSync('problems') && fs.mkdirSync('problems');
+!fs.existsSync('classification') && fs.mkdirSync('classification');
+!fs.existsSync('object_detection') && fs.mkdirSync('object_detection');
 
 // Given image URL and annotation, this function saves the image into the proper directory.
 function process(imageUrl, annotation) {
     // Get only 3 x 3 problems.
-    if(annotation.indexOf("If") == -1) {
+    if(annotation.indexOf("If") != -1) {
+      const question = annotation.split('If')[0];
+      if(question.indexOf("Select all squares with") != -1) {
+        category = annotation.split('If')[0].split('with ')[1];
+        const dir = './object_detection/' + category + '/';
+        !fs.existsSync(dir) && fs.mkdirSync(dir);
+        const file_length = fs.readdirSync(dir).length;
+        download(imageUrl, dir + 'image' + file_length + '.png', function(){
+          console.log('Image Saved: ' + dir + 'image' + file_length + '.png');
+        });
+      }
+    } else {
       const question = annotation.split('Click')[0];
       if(question.indexOf("Select all images with") != -1) {
         category = annotation.split('Click')[0].split('with ')[1];
-        const dir = './problems/' + category + '/';
+        const dir = './classification/' + category + '/';
         !fs.existsSync(dir) && fs.mkdirSync(dir);
         const file_length = fs.readdirSync(dir).length;
         download(imageUrl, dir + 'image' + file_length + '.png', function(){
@@ -113,6 +125,7 @@ async function run () {
 
   puppeteer.use(pluginStealth())
 
+  
   // Creating some browsers and downloading images.
   const browser1 = await puppeteer.launch({
     headless: false,
@@ -132,6 +145,34 @@ async function run () {
   page2.goto('https://www.google.com/recaptcha/api2/demo')
   solve(page2)
 
+  const browser3 = await puppeteer.launch({
+    headless: false,
+    args: ['--lang=en', '--window-size=360,500', '--proxy-server=socks5://127.0.0.1:9050', '--window-position=0,0']
+  })
+  const page3 = await browser3.newPage()
+  await page3.setDefaultNavigationTimeout(0)
+  page3.goto('https://www.google.com/recaptcha/api2/demo')
+  solve(page3)
+
+  const browser4 = await puppeteer.launch({
+    headless: false,
+    args: ['--lang=en', '--window-size=360,500', '--proxy-server=socks5://127.0.0.1:9050', '--window-position=0,0']
+  })
+  const page4 = await browser4.newPage()
+  await page4.setDefaultNavigationTimeout(0)
+  page4.goto('https://www.google.com/recaptcha/api2/demo')
+  solve(page4)
+
+  setTimeout(() => {
+      browser1.close();
+      browser2.close();
+      browser3.close();
+      browser4.close();
+  }, 60000);
+
 }
 
-run()
+run();
+setInterval(() => {
+    run();
+}, 60000);
