@@ -1,3 +1,5 @@
 node_modules
 classification
 object_detection
+test_dataset
+train_dataset
